@@ -1,0 +1,26 @@
+node_modules/
+dist/
+.DS_Store
+*.log
+server/data/*.json
+server/data/*.db
+server/data/*.db-wal
+server/data/*.db-shm
+!server/data/.gitkeep
+server/keys/
+!server/keys/.gitkeep
+server/uploads/
+.env
+.env.local
+~$*
+
+# Python engine
+engine/venv/
+engine/__pycache__/
+engine/**/__pycache__/
+engine/*.egg-info/
+engine/data/
+*.pyc
+*.mp4
+*.sql
+*.txt

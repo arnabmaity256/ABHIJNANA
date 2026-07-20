@@ -1,0 +1,21 @@
+{
+  "name": "@abhijnana/server",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Stubbed matching-engine + registry API for the ABHIJNANA prototype",
+  "main": "src/index.js",
+  "scripts": {
+    "dev": "node --watch src/index.js",
+    "start": "node src/index.js"
+  },
+  "dependencies": {
+    "better-sqlite3": "^12.11.1",
+    "cors": "^2.8.5",
+    "dotenv": "^17.4.2",
+    "express": "^4.21.2",
+    "multer": "^2.2.0",
+    "nanoid": "^5.0.9",
+    "redis": "^6.1.0"
+  }
+}
