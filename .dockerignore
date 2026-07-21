@@ -1,0 +1,14 @@
+# Docker build ignore patterns
+# Override .gitignore so that *.sql (migrations) and *.txt (requirements.txt) are included
+
+node_modules/
+web/dist/
+server/data/
+server/keys/
+server/uploads/
+engine/venv/
+engine/__pycache__/
+engine/data/
+.git/
+.env
+.env.local
