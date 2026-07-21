@@ -1,0 +1,4 @@
+# Docker build ignore for the engine subdirectory
+venv/
+__pycache__/
+data/
