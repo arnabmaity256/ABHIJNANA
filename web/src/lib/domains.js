@@ -1,7 +1,11 @@
 export function getPublicUrl() {
   const host = window.location.host;
   const protocol = window.location.protocol;
-  // Strip console. or admin. if present to get the public base domain
+  // adminabhijnana.rkmvcse.in → abhijnana.rkmvcse.in
+  if (host.startsWith('adminabhijnana.')) {
+    return `${protocol}//abhijnana.${host.substring('adminabhijnana.'.length)}`;
+  }
+  // Legacy: console. or admin. subdomains (local dev)
   if (host.startsWith('admin.')) {
     return `${protocol}//${host.substring('admin.'.length)}`;
   }
@@ -14,14 +18,17 @@ export function getPublicUrl() {
 export function getConsoleUrl() {
   const host = window.location.host;
   const protocol = window.location.protocol;
-  // If we are already on admin or console subdomain, just return the origin
-  if (host.startsWith('admin.') || host.startsWith('console.')) {
+  if (host.startsWith('adminabhijnana.') || host.startsWith('admin.') || host.startsWith('console.')) {
     return `${protocol}//${host}`;
   }
-  // Otherwise, prepend admin.
+  // abhijnana.rkmvcse.in → adminabhijnana.rkmvcse.in
+  if (host.startsWith('abhijnana.')) {
+    return `${protocol}//adminabhijnana.${host.substring('abhijnana.'.length)}`;
+  }
   return `${protocol}//admin.${host}`;
 }
 
 export function isConsoleSubdomain() {
-  return window.location.hostname.startsWith('admin.') || window.location.hostname.startsWith('console.');
+  const h = window.location.hostname;
+  return h.startsWith('adminabhijnana.') || h.startsWith('admin.') || h.startsWith('console.');
 }
