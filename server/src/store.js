@@ -21,7 +21,23 @@ function windowsFor(durationSec) {
 }
 
 function agencyById(id) {
-  return seed.agencies.find((a) => a.id === id);
+  const db = getDb();
+  const row = db.prepare('SELECT * FROM agencies WHERE id = ?').get(id);
+  if (!row) return seed.agencies.find((a) => a.id === id) || null;
+  return agencyFromRow(row);
+}
+
+function agencyFromRow(row) {
+  if (!row) return null;
+  return {
+    id: row.id,
+    name: row.name,
+    short: row.short,
+    type: row.type,
+    jurisdiction: row.jurisdiction,
+    status: row.status,
+    joinedAt: row.joined_at,
+  };
 }
 
 // ---- Decoration (same as prototype) --------------------------------------
@@ -199,8 +215,25 @@ function defaultUsername(name) {
   );
 }
 
+function seedAgencies() {
+  const db = getDb();
+  const count = db.prepare('SELECT COUNT(*) as c FROM agencies').get().c;
+  if (count > 0) return;
+
+  console.log('  [db] seeding agencies …');
+  const insert = db.prepare(`
+    INSERT OR IGNORE INTO agencies (id, name, short, type, jurisdiction, status, joined_at)
+    VALUES (@id, @name, @short, @type, @jurisdiction, @status, @joinedAt)
+  `);
+  for (const a of seed.agencies) {
+    insert.run(a);
+  }
+}
+
 function seedDatabase() {
   const db = getDb();
+
+  seedAgencies();
 
   // Only seed if the users table is empty.
   const count = db.prepare('SELECT COUNT(*) as c FROM users').get().c;
@@ -241,12 +274,39 @@ export function reset() {
   db.exec('DELETE FROM index_status');
   db.exec('DELETE FROM records');
   db.exec('DELETE FROM users');
+  db.exec('DELETE FROM agencies');
   seedDatabase();
 }
 
 // ---- Reads ---------------------------------------------------------------
 
-export const agencies = seed.agencies;
+export function getAgencies() {
+  const db = getDb();
+  return db.prepare('SELECT * FROM agencies ORDER BY id').all().map(agencyFromRow);
+}
+
+export function getAgency(id) {
+  return agencyById(id);
+}
+
+export function updateAgency(id, updates) {
+  const db = getDb();
+  const existing = db.prepare('SELECT * FROM agencies WHERE id = ?').get(id);
+  if (!existing) return null;
+
+  const name = (updates.name && updates.name.trim()) || existing.name;
+  const short = (updates.short && updates.short.trim()) || existing.short;
+
+  db.prepare('UPDATE agencies SET name = ?, short = ? WHERE id = ?').run(name, short, id);
+
+  db.prepare('INSERT INTO events (action, record_id, actor, authority, detail, timestamp) VALUES (?, ?, ?, ?, ?, ?)').run(
+    'AUTHORITY_UPDATED', null, updates.actor || 'System Administrator', id,
+    `Authority "${id}" renamed to "${name}" (${short})`,
+    new Date().toISOString(),
+  );
+
+  return agencyById(id);
+}
 
 export function getUsers() {
   const db = getDb();
@@ -332,7 +392,7 @@ export function stats() {
     openDisputes,
     newReports,
     totalReports,
-    agencies: seed.agencies.length,
+    agencies: getAgencies().length,
     byCategory,
   };
 }

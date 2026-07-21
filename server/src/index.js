@@ -124,7 +124,7 @@ api.get('/meta', cacheMiddleware(300), (req, res) => {
     keyId: 'abhijnana-root-2026',
     publicKey: store.getPublicKey(),
     categories: CATEGORIES,
-    agencies: store.agencies,
+    agencies: store.getAgencies(),
   });
 });
 
@@ -359,7 +359,19 @@ api.post('/reports', (req, res) => {
   res.status(201).json(store.fileReport(b));
 });
 
-api.get('/agencies', (req, res) => res.json(store.agencies));
+api.get('/agencies', (req, res) => res.json(store.getAgencies()));
+
+api.put('/agencies/:id', requireAuth, requireAdmin, (req, res) => {
+  const { name, short } = req.body || {};
+  if (!name && !short) return res.status(400).json({ error: 'name or short is required' });
+  const updated = store.updateAgency(req.params.id, { name, short, actor: req.user.name });
+  if (!updated) return res.status(404).json({ error: 'agency not found' });
+  invalidatePrefix('api_cache:/api/meta');
+  invalidatePrefix('api_cache:/api/records');
+  invalidatePrefix('api_cache:/api/audit');
+  invalidatePrefix('api_cache:/api/stats');
+  res.json(updated);
+});
 
 api.get('/users', requireAuth, (req, res) => res.json(store.getUsers()));
 

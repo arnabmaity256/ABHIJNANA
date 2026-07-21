@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Navigate } from 'react-router-dom';
-import { Users, UserPlus, ShieldCheck, Building2 } from 'lucide-react';
+import { Users, UserPlus, ShieldCheck, Building2, Pencil, Save, X } from 'lucide-react';
 import { api } from '../../lib/api.js';
 import { useAuth } from '../../lib/auth.jsx';
 import { useToast, Modal, Field, Badge, EmptyState } from '../../components/ui.jsx';
@@ -20,22 +20,61 @@ export function Team() {
   const [busy, setBusy] = useState(false);
   const set = (k, v) => setForm((f) => ({ ...f, [k]: v }));
 
+  // Authority name editing state
+  const [editingAuthority, setEditingAuthority] = useState(false);
+  const [authorityForm, setAuthorityForm] = useState({ name: '', short: '' });
+  const [savingAuthority, setSavingAuthority] = useState(false);
+
   function load() {
     api.users().then(setUsers).catch(() => {});
   }
-  useEffect(() => {
-    load();
+  function loadAgencies() {
     api.meta().then((m) => {
       setAgencies(m.agencies);
       setForm((f) => ({ ...f, agencyId: m.agencies[0]?.id || '' }));
     }).catch(() => {});
+  }
+  useEffect(() => {
+    load();
+    loadAgencies();
   }, []);
 
   // Admin-only surface.
   if (user && user.role !== 'System Administrator') return <Navigate to="/" replace />;
 
+  function startEditAuthority(agency) {
+    setAuthorityForm({ name: agency.name, short: agency.short });
+    setEditingAuthority(true);
+  }
+
+  function cancelEditAuthority() {
+    setEditingAuthority(false);
+    setAuthorityForm({ name: '', short: '' });
+  }
+
+  async function saveAuthority() {
+    const agency = agencies[0];
+    if (!agency) return;
+    if (!authorityForm.name.trim()) return toast('Authority name cannot be empty', 'err');
+    if (!authorityForm.short.trim()) return toast('Abbreviation cannot be empty', 'err');
+    setSavingAuthority(true);
+    try {
+      await api.updateAgency(agency.id, {
+        name: authorityForm.name.trim(),
+        short: authorityForm.short.trim(),
+      });
+      toast('Authority name updated');
+      setEditingAuthority(false);
+      loadAgencies();
+    } catch (e) {
+      toast(e.message || 'Failed to update authority name', 'err');
+    } finally {
+      setSavingAuthority(false);
+    }
+  }
+
   async function submit() {
-    if (!form.name.trim()) return toast('Enter the officer’s name', 'err');
+    if (!form.name.trim()) return toast('Enter the officer\u2019s name', 'err');
     if (form.password.length < 8) return toast('Password must be at least 8 characters', 'err');
     setBusy(true);
     try {
@@ -52,6 +91,7 @@ export function Team() {
   }
 
   const roleCls = (r) => (r === 'System Administrator' ? 'badge-danger' : r === 'Flagging Officer' ? 'badge-info' : 'badge-neutral');
+  const currentAgency = agencies[0];
 
   return (
     <div className="fade-in" style={{ maxWidth: 880, margin: '0 auto' }}>
@@ -63,6 +103,74 @@ export function Team() {
         </div>
         <button className="btn btn-primary" onClick={() => setOpen(true)}><UserPlus size={16} /> Create account</button>
       </div>
+
+      {/* Authority settings card */}
+      {currentAgency && (
+        <div className="card card-pad" style={{ marginBottom: 24 }}>
+          <div className="spread" style={{ marginBottom: editingAuthority ? 16 : 0 }}>
+            <div className="row gap-10" style={{ alignItems: 'center' }}>
+              <Building2 size={18} style={{ color: 'var(--navy)' }} />
+              <div className="section-label" style={{ margin: 0 }}>Authority settings</div>
+            </div>
+            {!editingAuthority && (
+              <button className="btn btn-ghost btn-sm" onClick={() => startEditAuthority(currentAgency)}>
+                <Pencil size={14} /> Edit
+              </button>
+            )}
+          </div>
+          {editingAuthority ? (
+            <div className="stack gap-14">
+              <div className="row gap-12 wrap">
+                <div style={{ flex: '2 1 260px' }}>
+                  <Field label="Authority name" hint="The full legal name of the operating authority.">
+                    <input
+                      className="input"
+                      value={authorityForm.name}
+                      onChange={(e) => setAuthorityForm((f) => ({ ...f, name: e.target.value }))}
+                      placeholder="e.g. Synthetic Media Verification Authority"
+                      disabled={savingAuthority}
+                    />
+                  </Field>
+                </div>
+                <div style={{ flex: '1 1 140px' }}>
+                  <Field label="Abbreviation" hint="Short code displayed in the console and on records.">
+                    <input
+                      className="input"
+                      value={authorityForm.short}
+                      onChange={(e) => setAuthorityForm((f) => ({ ...f, short: e.target.value }))}
+                      placeholder="e.g. SMVA"
+                      disabled={savingAuthority}
+                    />
+                  </Field>
+                </div>
+              </div>
+              <div className="row gap-8" style={{ justifyContent: 'flex-end' }}>
+                <button className="btn btn-ghost btn-sm" onClick={cancelEditAuthority} disabled={savingAuthority}>
+                  <X size={14} /> Cancel
+                </button>
+                <button className="btn btn-primary btn-sm" onClick={saveAuthority} disabled={savingAuthority}>
+                  {savingAuthority ? 'Saving…' : <><Save size={14} /> Save changes</>}
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div className="row gap-24 wrap" style={{ marginTop: 8 }}>
+              <div>
+                <div className="tiny muted" style={{ marginBottom: 3 }}>Full name</div>
+                <div style={{ fontWeight: 600 }}>{currentAgency.name}</div>
+              </div>
+              <div>
+                <div className="tiny muted" style={{ marginBottom: 3 }}>Abbreviation</div>
+                <div className="mono" style={{ fontWeight: 600 }}>{currentAgency.short}</div>
+              </div>
+              <div>
+                <div className="tiny muted" style={{ marginBottom: 3 }}>ID</div>
+                <div className="mono small muted">{currentAgency.id}</div>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
 
       {users.length === 0 ? (
         <div className="card"><EmptyState icon={Users} title="No accounts">Provisioned operator accounts will appear here.</EmptyState></div>

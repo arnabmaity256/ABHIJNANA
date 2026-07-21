@@ -69,5 +69,6 @@ export const api = {
   fileReport: (body) => req('/reports', { method: 'POST', body }),
   agencies: () => req('/agencies'),
   createUser: (body) => req('/users', { method: 'POST', body }),
+  updateAgency: (id, body) => req(`/agencies/${id}`, { method: 'PUT', body }),
   reset: () => req('/reset', { method: 'POST' }),
 };
