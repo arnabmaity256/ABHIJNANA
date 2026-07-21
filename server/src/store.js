@@ -8,6 +8,7 @@
 // The export surface is identical to the prototype's in-memory store so
 // index.js (API routes) requires zero changes.
 import { getDb, migrate } from './db.js';
+export { getDb };
 import {
   signRecord, verifyRecord, contentDigest, chainHash, KEY_ID, publicKeyPem,
   hashPassword, verifyPassword, newToken,
@@ -534,6 +535,12 @@ export function revokeRecord(id, actor, note) {
   );
 
   return getRecord(id);
+}
+
+export function deleteRecord(id) {
+  const db = getDb();
+  db.prepare('DELETE FROM events WHERE record_id = ?').run(id);
+  db.prepare('DELETE FROM records WHERE id = ?').run(id);
 }
 
 export function recordQuery(result) {

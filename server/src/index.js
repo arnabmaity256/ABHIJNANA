@@ -207,9 +207,7 @@ api.post('/records', requireAuth, upload.single('video'), async (req, res) => {
   } catch (err) {
     console.error('  [api] engine ingest failed:', err.message);
     // Clean up the record from store/database as ingest failed
-    const db = store.getDb();
-    db.prepare('DELETE FROM events WHERE record_id = ?').run(rec.id);
-    db.prepare('DELETE FROM records WHERE id = ?').run(rec.id);
+    store.deleteRecord(rec.id);
     return res.status(500).json({ error: `failed to index video in matching engine: ${err.message}` });
   } finally {
     // Clean up uploaded file

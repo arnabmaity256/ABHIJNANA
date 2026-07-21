@@ -160,10 +160,12 @@ def _extract_audio_fingerprint(video_path: str) -> bytes | None:
             for line in proc.stdout.strip().split("\n"):
                 if line.startswith("FINGERPRINT="):
                     raw_str = line.split("=", 1)[1]
-                    # Convert comma-separated integers to packed bytes
-                    ints = [int(x) for x in raw_str.split(",")]
-                    return struct.pack(f">{len(ints)}i", *ints)
-    except (FileNotFoundError, subprocess.TimeoutExpired):
+                    # Convert comma-separated unsigned integers to packed bytes
+                    ints = [int(x) & 0xFFFFFFFF for x in raw_str.split(",") if x.strip()]
+                    if not ints:
+                        return None
+                    return struct.pack(f">{len(ints)}I", *ints)
+    except (FileNotFoundError, subprocess.TimeoutExpired, ValueError, struct.error):
         pass
 
     # Fallback: try pyacoustid
