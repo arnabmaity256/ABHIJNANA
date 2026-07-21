@@ -100,6 +100,25 @@ api.post('/auth/logout', requireAuth, (req, res) => {
 
 api.get('/auth/me', requireAuth, (req, res) => res.json(req.user));
 
+api.post('/auth/change-password', requireAuth, (req, res) => {
+  const { oldPassword, newPassword } = req.body || {};
+  if (!oldPassword || !newPassword) {
+    return res.status(400).json({ error: 'old password and new password are required' });
+  }
+  if (String(newPassword).length < 8) {
+    return res.status(400).json({ error: 'new password must be at least 8 characters long' });
+  }
+  try {
+    const ok = store.changePassword(req.user.id, oldPassword, newPassword);
+    if (!ok) {
+      return res.status(400).json({ error: 'incorrect old password' });
+    }
+    res.json({ ok: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 api.get('/meta', cacheMiddleware(300), (req, res) => {
   res.json({
     keyId: 'abhijnana-root-2026',
@@ -365,6 +384,16 @@ api.post('/reset', (req, res) => {
 });
 
 app.use('/api', api);
+
+// Serve static React web portal files in production
+const PUBLIC_DIR = path.resolve(__dirname, '..', '..', 'web', 'dist');
+if (fs.existsSync(PUBLIC_DIR)) {
+  console.log(`  [api] serving static frontend from ${PUBLIC_DIR}`);
+  app.use(express.static(PUBLIC_DIR));
+  app.get('*', (req, res) => {
+    res.sendFile(path.join(PUBLIC_DIR, 'index.html'));
+  });
+}
 
 const PORT = process.env.PORT || 4317;
 app.listen(PORT, async () => {

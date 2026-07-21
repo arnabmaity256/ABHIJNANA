@@ -1,19 +1,11 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { ShieldCheck, Lock, Fingerprint, KeyRound, ArrowRight, User, AtSign } from 'lucide-react';
+import { ShieldCheck, Lock, Fingerprint, KeyRound, ArrowRight, AtSign } from 'lucide-react';
 import { api } from '../../lib/api.js';
 import { Wordmark, Seal } from '../../components/Seal.jsx';
 import { Field, useToast } from '../../components/ui.jsx';
 import { useAuth } from '../../lib/auth.jsx';
 import { getPublicUrl } from '../../lib/domains.js';
-
-// Demo sign-in shortcuts — surfaced so the prototype is easy to explore.
-const DEMO_ACCOUNTS = [
-  { username: 'r.deshpande', label: 'Insp. R. Deshpande', role: 'Flagging Officer' },
-  { username: 'a.krishnan', label: 'A. Krishnan', role: 'Verification Analyst' },
-  { username: 's.nair', label: 'Dir. S. Nair', role: 'System Administrator' },
-];
-const DEMO_PASSWORD = 'abhijnana';
 
 export function Login() {
   const { user, login } = useAuth();
@@ -40,9 +32,7 @@ export function Login() {
     }
   }
 
-  function useDemo(acc) {
-    setForm({ username: acc.username, password: DEMO_PASSWORD });
-  }
+
 
   return (
     <div style={{ display: 'grid', gridTemplateColumns: '1.1fr 1fr', minHeight: '100vh' }}>
@@ -120,26 +110,8 @@ export function Login() {
             </button>
           </div>
 
-          {/* Demo credentials */}
-          <div className="card card-pad" style={{ marginTop: 20, background: 'var(--surface-2)' }}>
-            <div className="spread" style={{ marginBottom: 8 }}>
-              <span className="section-label">Demo accounts</span>
-              <span className="tiny muted">password: <span className="mono">{DEMO_PASSWORD}</span></span>
-            </div>
-            <div className="stack gap-6">
-              {DEMO_ACCOUNTS.map((a) => (
-                <button key={a.username} className="row gap-8" onClick={() => useDemo(a)}
-                  style={{ padding: '7px 9px', borderRadius: 8, border: '1px solid var(--line)', background: 'var(--surface)', cursor: 'pointer', textAlign: 'left' }}>
-                  <User size={14} className="muted" />
-                  <span className="mono small">{a.username}</span>
-                  <span className="tiny muted" style={{ marginLeft: 'auto' }}>{a.role}</span>
-                </button>
-              ))}
-            </div>
-          </div>
-
-          <p className="tiny muted center" style={{ marginTop: 14 }}>
-            Prototype credentials — no real accounts. <a href={getPublicUrl()}>Return to public portal</a>
+          <p className="tiny muted center" style={{ marginTop: 24 }}>
+            Restricted access. Authorized operators only. <a href={getPublicUrl()}>Return to public portal</a>
           </p>
         </div>
       </div>

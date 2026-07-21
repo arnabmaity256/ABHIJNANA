@@ -49,6 +49,7 @@ export const api = {
   authLogin: (body) => req('/auth/login', { method: 'POST', body }),
   authLogout: () => req('/auth/logout', { method: 'POST' }),
   authMe: () => req('/auth/me'),
+  authChangePassword: (body) => req('/auth/change-password', { method: 'POST', body }),
   users: () => req('/users'),
   meta: () => req('/meta'),
   stats: () => req('/stats'),

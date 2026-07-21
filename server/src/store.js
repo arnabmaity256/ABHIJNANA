@@ -347,14 +347,21 @@ export function login(username, password) {
   if (!verifyPassword(password, u.salt, u.passwordHash)) return null;
 
   const token = newToken();
-  db.prepare('INSERT INTO sessions (token, user_id) VALUES (?, ?)').run(token, u.id);
+  const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(); // 24 hours
+  db.prepare('INSERT INTO sessions (token, user_id, expires_at) VALUES (?, ?, ?)').run(token, u.id, expiresAt);
   return { token, user: publicUser(u) };
 }
 
 export function sessionUser(token) {
   const db = getDb();
-  const session = db.prepare('SELECT user_id FROM sessions WHERE token = ?').get(token);
+  const session = db.prepare('SELECT user_id, expires_at FROM sessions WHERE token = ?').get(token);
   if (!session) return null;
+
+  if (session.expires_at && new Date(session.expires_at) < new Date()) {
+    db.prepare('DELETE FROM sessions WHERE token = ?').run(token);
+    return null;
+  }
+
   const row = db.prepare('SELECT * FROM users WHERE id = ?').get(session.user_id);
   return row ? publicUser(userFromRow(row)) : null;
 }
@@ -366,6 +373,29 @@ export function logout(token) {
 
 export function isAdmin(user) {
   return user?.role === 'System Administrator';
+}
+
+export function changePassword(userId, oldPassword, newPassword) {
+  const db = getDb();
+  const row = db.prepare('SELECT * FROM users WHERE id = ?').get(userId);
+  if (!row) return false;
+  const u = userFromRow(row);
+  if (!verifyPassword(oldPassword, u.salt, u.passwordHash)) return false;
+
+  const creds = hashPassword(newPassword);
+  db.prepare('UPDATE users SET password_hash = ?, salt = ? WHERE id = ?').run(creds.passwordHash, creds.salt, userId);
+
+  // Invalidate all active sessions for this user
+  db.prepare('DELETE FROM sessions WHERE user_id = ?').run(userId);
+
+  // Log in events
+  db.prepare('INSERT INTO events (action, record_id, actor, authority, detail, timestamp) VALUES (?, ?, ?, ?, ?, ?)').run(
+    'USER_PASSWORD_CHANGED', null, u.name, u.agencyId,
+    `Password updated for operator account ${u.id} (${u.name})`,
+    new Date().toISOString(),
+  );
+
+  return true;
 }
 
 // ---- Writes --------------------------------------------------------------

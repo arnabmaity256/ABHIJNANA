@@ -1,7 +1,10 @@
 export function getPublicUrl() {
   const host = window.location.host;
   const protocol = window.location.protocol;
-  // If we are on console subdomain, strip it to get the base domain
+  // Strip console. or admin. if present to get the public base domain
+  if (host.startsWith('admin.')) {
+    return `${protocol}//${host.substring('admin.'.length)}`;
+  }
   if (host.startsWith('console.')) {
     return `${protocol}//${host.substring('console.'.length)}`;
   }
@@ -11,14 +14,14 @@ export function getPublicUrl() {
 export function getConsoleUrl() {
   const host = window.location.host;
   const protocol = window.location.protocol;
-  // If we are already on console subdomain, just return the origin
-  if (host.startsWith('console.')) {
+  // If we are already on admin or console subdomain, just return the origin
+  if (host.startsWith('admin.') || host.startsWith('console.')) {
     return `${protocol}//${host}`;
   }
-  // Otherwise, prepend console.
-  return `${protocol}//console.${host}`;
+  // Otherwise, prepend admin.
+  return `${protocol}//admin.${host}`;
 }
 
 export function isConsoleSubdomain() {
-  return window.location.hostname.startsWith('console.');
+  return window.location.hostname.startsWith('admin.') || window.location.hostname.startsWith('console.');
 }

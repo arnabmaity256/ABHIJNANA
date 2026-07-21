@@ -2,11 +2,13 @@ import { useState } from 'react';
 import { NavLink, Outlet, useNavigate, Navigate, Link } from 'react-router-dom';
 import {
   LayoutDashboard, FlagTriangleRight, Database, ScrollText, Scale,
-  LogOut, Menu, ExternalLink, Flag, Users,
+  LogOut, Menu, ExternalLink, Flag, Users, KeyRound,
 } from 'lucide-react';
 import { Wordmark } from './Seal.jsx';
 import { useAuth } from '../lib/auth.jsx';
 import { getPublicUrl } from '../lib/domains.js';
+import { api } from '../lib/api.js';
+import { Modal, Field, useToast } from './ui.jsx';
 
 const NAV = [
   { to: '/', end: true, icon: LayoutDashboard, label: 'Dashboard' },
@@ -26,7 +28,41 @@ export function ConsoleLayout() {
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
 
+  const [pwOpen, setPwOpen] = useState(false);
+  const [pwForm, setPwForm] = useState({ oldPassword: '', newPassword: '', confirmPassword: '' });
+  const [pwBusy, setPwBusy] = useState(false);
+  const toast = useToast();
+
   if (!user) return <Navigate to="/login" replace />;
+
+  const handlePwChange = (k, v) => setPwForm((f) => ({ ...f, [k]: v }));
+
+  async function submitPasswordChange() {
+    if (!pwForm.oldPassword || !pwForm.newPassword || !pwForm.confirmPassword) {
+      return toast('All fields are required', 'err');
+    }
+    if (pwForm.newPassword.length < 8) {
+      return toast('New password must be at least 8 characters long', 'err');
+    }
+    if (pwForm.newPassword !== pwForm.confirmPassword) {
+      return toast('Passwords do not match', 'err');
+    }
+    setPwBusy(true);
+    try {
+      await api.authChangePassword({
+        oldPassword: pwForm.oldPassword,
+        newPassword: pwForm.newPassword,
+      });
+      toast('Password changed successfully. Please log in again.');
+      setPwOpen(false);
+      setPwForm({ oldPassword: '', newPassword: '', confirmPassword: '' });
+      logout();
+    } catch (e) {
+      toast(e.message || 'Failed to change password', 'err');
+    } finally {
+      setPwBusy(false);
+    }
+  }
 
   const initials = user.name.split(' ').map((w) => w[0]).slice(-2).join('');
 
@@ -73,8 +109,18 @@ export function ConsoleLayout() {
             <button
               className="btn btn-subtle btn-sm"
               style={{ marginLeft: 'auto', color: 'var(--on-dark-muted)' }}
+              onClick={() => setPwOpen(true)}
+              aria-label="Change password"
+              title="Change password"
+            >
+              <KeyRound size={16} />
+            </button>
+            <button
+              className="btn btn-subtle btn-sm"
+              style={{ color: 'var(--on-dark-muted)' }}
               onClick={() => { logout(); window.location.href = getPublicUrl(); }}
               aria-label="Sign out"
+              title="Sign out"
             >
               <LogOut size={16} />
             </button>
@@ -96,6 +142,54 @@ export function ConsoleLayout() {
           <Outlet />
         </div>
       </div>
+
+      <Modal
+        open={pwOpen}
+        onClose={() => { if (!pwBusy) setPwOpen(false); }}
+        title="Change Password"
+        footer={
+          <div className="row gap-8" style={{ justifyContent: 'flex-end' }}>
+            <button className="btn btn-ghost btn-sm" onClick={() => setPwOpen(false)} disabled={pwBusy}>Cancel</button>
+            <button className="btn btn-primary btn-sm" onClick={submitPasswordChange} disabled={pwBusy}>
+              {pwBusy ? 'Updating…' : 'Change password'}
+            </button>
+          </div>
+        }
+      >
+        <div className="stack gap-16">
+          <Field label="Current password">
+            <input
+              className="input"
+              type="password"
+              value={pwForm.oldPassword}
+              onChange={(e) => handlePwChange('oldPassword', e.target.value)}
+              placeholder="Enter current password"
+              disabled={pwBusy}
+            />
+          </Field>
+          <Field label="New password" hint="Must be at least 8 characters long.">
+            <input
+              className="input"
+              type="password"
+              value={pwForm.newPassword}
+              onChange={(e) => handlePwChange('newPassword', e.target.value)}
+              placeholder="Enter new password"
+              disabled={pwBusy}
+            />
+          </Field>
+          <Field label="Confirm new password">
+            <input
+              className="input"
+              type="password"
+              value={pwForm.confirmPassword}
+              onChange={(e) => handlePwChange('confirmPassword', e.target.value)}
+              placeholder="Confirm new password"
+              disabled={pwBusy}
+              onKeyDown={(e) => e.key === 'Enter' && submitPasswordChange()}
+            />
+          </Field>
+        </div>
+      </Modal>
     </div>
   );
 }
