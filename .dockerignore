@@ -1,6 +1,4 @@
-# Docker build ignore patterns
-# Override .gitignore so that *.sql (migrations) and *.txt (requirements.txt) are included
-
+# Exclude folders
 node_modules/
 web/dist/
 server/data/
@@ -12,3 +10,8 @@ engine/data/
 .git/
 .env
 .env.local
+
+# Force inclusion of migrations and requirements files
+!server/migrations/
+!server/migrations/*.sql
+!engine/requirements.txt
