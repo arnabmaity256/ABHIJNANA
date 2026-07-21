@@ -22,5 +22,9 @@ engine/*.egg-info/
 engine/data/
 *.pyc
 *.mp4
+
+# Ignore stray documents but keep critical source files
 *.sql
+!server/migrations/*.sql
 *.txt
+!engine/requirements.txt

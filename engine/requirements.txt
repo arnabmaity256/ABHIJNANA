@@ -1,0 +1,27 @@
+# ABHIJÑĀNA Matching Engine
+#
+# Core dependencies for the real video fingerprinting and matching pipeline.
+# Install with: pip install -r requirements.txt
+
+# Web framework
+fastapi>=0.115.0
+uvicorn[standard]>=0.34.0
+
+# Video processing
+ffmpeg-python>=0.2.0
+
+# Image processing & perceptual hashing
+opencv-python-headless>=4.10.0
+Pillow>=10.0.0
+imagehash>=4.3.1
+numpy>=1.26.0
+
+# Audio fingerprinting
+pyacoustid>=1.3.0
+
+# FAISS — approximate nearest-neighbour search
+faiss-cpu>=1.9.0
+
+# Utilities
+pydantic>=2.0.0
+python-multipart>=0.0.9
