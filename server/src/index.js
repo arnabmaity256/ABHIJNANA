@@ -183,7 +183,13 @@ api.post('/records', requireAuth, upload.single('video'), async (req, res) => {
 
   const rec = store.createRecord({ ...b, authorityId: req.user.agencyId, flaggedBy: req.user.name });
 
+  const ext = path.extname(req.file.originalname || '') || '.mp4';
+  const permanentPath = path.join(UPLOADS_DIR, `${rec.id}${ext}`);
+
   try {
+    // Save permanent copy in server/uploads for direct API video serving
+    fs.copyFileSync(req.file.path, permanentPath);
+
     const FormData = (await import('node:buffer')).File
       ? globalThis.FormData
       : (await import('undici')).FormData;
@@ -206,11 +212,12 @@ api.post('/records', requireAuth, upload.single('video'), async (req, res) => {
     rec.engineWindows = engineData.windows || 0;
   } catch (err) {
     console.error('  [api] engine ingest failed:', err.message);
-    // Clean up the record from store/database as ingest failed
+    // Clean up the record and stored video file if ingest failed
     store.deleteRecord(rec.id);
+    try { fs.unlinkSync(permanentPath); } catch {}
     return res.status(500).json({ error: `failed to index video in matching engine: ${err.message}` });
   } finally {
-    // Clean up uploaded file
+    // Clean up temporary upload file
     try { fs.unlinkSync(req.file.path); } catch {}
   }
 
